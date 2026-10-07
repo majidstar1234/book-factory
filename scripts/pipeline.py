@@ -81,8 +81,13 @@ def main() -> None:
             try:
                 run("ai_writer.py", {"CHAPTER_ID": str(chapter_id)})
             except subprocess.CalledProcessError:
-                # ai_writer.py persists status=failed before raising. Preserve that state in Git.
-                git_commit(f"book: generation failed for chapter {chapter_id:03d}")
+                # Do not commit or push a failed generation.
+                # ai_writer.py already persists status=failed locally.
+                print(
+                    f"Generation failed for chapter {chapter_id:03d}; "
+                    "no commit or push will be performed.",
+                    flush=True,
+                )
                 raise
             git_commit(f"book: generate chapter {chapter_id:03d}")
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,8 @@ CHAPTERS_DIR = ROOT / "book" / "chapters"
 SYSTEM_PROMPT = (ROOT / "prompts" / "system.txt").read_text(encoding="utf-8")
 CHAPTER_PROMPT = (ROOT / "prompts" / "chapter.txt").read_text(encoding="utf-8")
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+MAX_RETRIES = max(1, int(os.getenv("GEMINI_MAX_RETRIES", "3")))
+RETRY_DELAY = max(0, float(os.getenv("GEMINI_RETRY_DELAY", "5")))
 
 
 def load_outline() -> dict[str, Any]:
@@ -108,20 +111,32 @@ def generate(chapter: dict[str, Any], outline: dict[str, Any]) -> str:
     if chapter.get("status") == "revision_required":
         prompt += "\n\nاصلاحات بازبینی قبلی:\n" + revision_context(chapter)
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=[
-            types.Content(role="user", parts=[types.Part(text=SYSTEM_PROMPT)]),
-            types.Content(role="user", parts=[types.Part(text=prompt)]),
-        ],
-        config=types.GenerateContentConfig(
-            temperature=0.65,
-            max_output_tokens=12000,
-        ),
-    )
-    if not response.text:
-        raise RuntimeError("Gemini returned an empty response")
-    return clean_text(response.text)
+    last_error: Exception | None = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=[
+                    types.Content(role="user", parts=[types.Part(text=SYSTEM_PROMPT)]),
+                    types.Content(role="user", parts=[types.Part(text=prompt)]),
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0.65,
+                    max_output_tokens=12000,
+                ),
+            )
+            if not response.text:
+                raise RuntimeError("Gemini returned an empty response")
+            return clean_text(response.text)
+        except Exception as exc:
+            last_error = exc
+            if attempt >= MAX_RETRIES:
+                break
+            delay = RETRY_DELAY * attempt
+            print(f"Gemini attempt {attempt}/{MAX_RETRIES} failed: {exc}. Retrying in {delay:g}s...", flush=True)
+            time.sleep(delay)
+
+    raise RuntimeError(f"Gemini failed after {MAX_RETRIES} attempts: {last_error}") from last_error
 
 
 def main() -> None:
