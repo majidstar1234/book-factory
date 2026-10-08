@@ -14,7 +14,16 @@ OUTLINE_PATH = ROOT / "book" / "outline.json"
 CHAPTERS_DIR = ROOT / "book" / "chapters"
 SYSTEM_PROMPT = (ROOT / "prompts" / "system.txt").read_text(encoding="utf-8")
 CHAPTER_PROMPT = (ROOT / "prompts" / "chapter.txt").read_text(encoding="utf-8")
-MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip() or "gemini-3.8-flash"
+FALLBACK_MODELS = tuple(
+    m.strip()
+    for m in os.getenv(
+        "GEMINI_FALLBACK_MODELS",
+        "gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash",
+    ).split(",")
+    if m.strip()
+)
+MODEL_CHAIN = tuple(dict.fromkeys((MODEL, *FALLBACK_MODELS)))
 MAX_RETRIES = max(1, int(os.getenv("GEMINI_MAX_RETRIES", "3")))
 RETRY_DELAY = max(0, float(os.getenv("GEMINI_RETRY_DELAY", "5")))
 
@@ -112,31 +121,44 @@ def generate(chapter: dict[str, Any], outline: dict[str, Any]) -> str:
         prompt += "\n\nاصلاحات بازبینی قبلی:\n" + revision_context(chapter)
 
     last_error: Exception | None = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            response = client.models.generate_content(
-                model=MODEL,
-                contents=[
-                    types.Content(role="user", parts=[types.Part(text=SYSTEM_PROMPT)]),
-                    types.Content(role="user", parts=[types.Part(text=prompt)]),
-                ],
-                config=types.GenerateContentConfig(
-                    temperature=0.65,
-                    max_output_tokens=12000,
-                ),
-            )
-            if not response.text:
-                raise RuntimeError("Gemini returned an empty response")
-            return clean_text(response.text)
-        except Exception as exc:
-            last_error = exc
-            if attempt >= MAX_RETRIES:
-                break
-            delay = RETRY_DELAY * attempt
-            print(f"Gemini attempt {attempt}/{MAX_RETRIES} failed: {exc}. Retrying in {delay:g}s...", flush=True)
-            time.sleep(delay)
+    for model_name in MODEL_CHAIN:
+        print(f"Gemini model: {model_name}", flush=True)
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[
+                        types.Content(role="user", parts=[types.Part(text=SYSTEM_PROMPT)]),
+                        types.Content(role="user", parts=[types.Part(text=prompt)]),
+                    ],
+                    config=types.GenerateContentConfig(
+                        temperature=0.65,
+                        max_output_tokens=12000,
+                    ),
+                )
+                if not response.text:
+                    raise RuntimeError("Gemini returned an empty response")
+                result = clean_text(response.text)
+                if not result:
+                    raise RuntimeError("Gemini returned an empty response")
+                return result
+            except Exception as exc:
+                if not (
+                    exc.__class__.__name__ == "ServerError"
+                    or str(getattr(exc, "status_code", "")) in {"429", "500", "502", "503", "504"}
+                    or str(getattr(exc, "code", "")) in {"429", "500", "502", "503", "504"}
+                    or isinstance(exc, (TimeoutError, ConnectionError))
+                    or (isinstance(exc, RuntimeError) and str(exc) == "Gemini returned an empty response")
+                ):
+                    raise
+                last_error = exc
+                if attempt >= MAX_RETRIES:
+                    break
+                delay = RETRY_DELAY * attempt
+                print(f"Gemini attempt {attempt}/{MAX_RETRIES} failed: {exc}. Retrying in {delay:g}s...", flush=True)
+                time.sleep(delay)
 
-    raise RuntimeError(f"Gemini failed after {MAX_RETRIES} attempts: {last_error}") from last_error
+    raise RuntimeError(f"Gemini failed across models {MODEL_CHAIN} after {MAX_RETRIES} attempts per model: {last_error}") from last_error
 
 
 def main() -> None:
