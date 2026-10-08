@@ -14,10 +14,10 @@
     {
       "id": 2,
       "title": "معماری گیت‌هاب اکشنز در اتوماسیون",
-      "status": "written",
+      "status": "approved",
       "attempts": 2,
-      "review": "pending",
-      "review_score": 80
+      "review": "approved",
+      "review_score": 91
     }
   ]
 }
