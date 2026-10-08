@@ -50,6 +50,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y latexmk texlive-xetex texlive-lang-arabic texlive-latex-extra fonts-noto-core fonts-noto-extra
+          sudo mkdir -p /usr/local/share/fonts/book-factory
+          sudo cp fonts/pack/NotoNaskhArabic/*.ttf /usr/local/share/fonts/book-factory/
+          sudo cp fonts/pack/NotoSansArabic/*.ttf /usr/local/share/fonts/book-factory/
+          sudo cp fonts/pack/NotoSans/*.ttf /usr/local/share/fonts/book-factory/
+          sudo cp fonts/pack/Vazirmatn/*.ttf /usr/local/share/fonts/book-factory/
+          sudo fc-cache -f
+          echo "Bundled font check:"
+          fc-match "Noto Naskh Arabic"
+          fc-match "Noto Sans Arabic"
+          fc-match "Vazirmatn"
 
       - name: Run autonomous writer/reviewer pipeline
         env:

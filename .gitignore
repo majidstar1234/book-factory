@@ -9,3 +9,6 @@ output/*.out
 output/*.toc
 output/*.fls
 output/*.fdb_latexmk
+
+# Extracted font sources; commit only fonts/pack
+fonts/open/
