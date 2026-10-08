@@ -175,6 +175,7 @@ def main() -> None:
     try:
         content = generate(chapter, outline)
         chapter_id = int(chapter["id"])
+        CHAPTERS_DIR.mkdir(parents=True, exist_ok=True)
         out_path = CHAPTERS_DIR / f"chapter_{chapter_id:03d}.md"
         out_path.write_text(
             f"# {chapter['title']}\n\n{content}\n", encoding="utf-8"
