@@ -67,9 +67,7 @@ def main() -> None:
         raise SystemExit("GEMINI_API_KEY is not set")
 
     client = genai.Client(api_key=api_key)
-    prompt = REVIEW_PROMPT.format(
-        chapter_title=chapter["title"], chapter_content=content
-    )
+    prompt = REVIEW_PROMPT.replace("{chapter_title}", chapter["title"]).replace("{chapter_content}", content)
     response = client.models.generate_content(model=MODEL, contents=prompt)
     if not response.text:
         raise RuntimeError("Reviewer returned an empty response")
@@ -81,6 +79,7 @@ def main() -> None:
     review["score"] = score
     review["chapter_id"] = int(chapter["id"])
 
+    REVIEWS_DIR.mkdir(parents=True, exist_ok=True)
     out = REVIEWS_DIR / f"review_{int(chapter['id']):03d}.json"
     out.write_text(json.dumps(review, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
