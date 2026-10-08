@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +14,18 @@ OUTLINE_PATH = ROOT / "book" / "outline.json"
 CHAPTERS_DIR = ROOT / "book" / "chapters"
 REVIEWS_DIR = ROOT / "book" / "reviews"
 REVIEW_PROMPT = (ROOT / "prompts" / "review.txt").read_text(encoding="utf-8")
-MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip() or "gemini-3.8-flash"
+FALLBACK_MODELS = tuple(
+    m.strip()
+    for m in os.getenv(
+        "GEMINI_FALLBACK_MODELS",
+        "gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash",
+    ).split(",")
+    if m.strip()
+)
+MODEL_CHAIN = tuple(dict.fromkeys((MODEL, *FALLBACK_MODELS)))
+MAX_RETRIES = max(1, int(os.getenv("GEMINI_MAX_RETRIES", "3")))
+RETRY_DELAY = max(0, float(os.getenv("GEMINI_RETRY_DELAY", "5")))
 
 
 def load_outline() -> dict[str, Any]:
@@ -53,6 +65,28 @@ def choose(outline: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def generate_review(client: genai.Client, prompt: str) -> dict[str, Any]:
+    last_error: Exception | None = None
+    for model_name in MODEL_CHAIN:
+        print(f"Gemini model: {model_name}", flush=True)
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                if not response.text:
+                    raise RuntimeError("Reviewer returned an empty response")
+                return extract_json(response.text)
+            except Exception as exc:
+                last_error = exc
+                print(f"Gemini attempt {attempt}/{MAX_RETRIES} failed: {exc}", flush=True)
+                if attempt < MAX_RETRIES:
+                    delay = RETRY_DELAY * attempt
+                    print(f"Retrying in {delay:g}s...", flush=True)
+                    time.sleep(delay)
+    raise RuntimeError("Reviewer failed after all configured Gemini models and retries") from last_error
+
 def main() -> None:
     outline = load_outline()
     chapter = choose(outline)
@@ -68,10 +102,7 @@ def main() -> None:
 
     client = genai.Client(api_key=api_key)
     prompt = REVIEW_PROMPT.replace("{chapter_title}", chapter["title"]).replace("{chapter_content}", content)
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    if not response.text:
-        raise RuntimeError("Reviewer returned an empty response")
-    review = extract_json(response.text)
+    review = generate_review(client, prompt)
 
     score = int(review.get("score", 0))
     approved = bool(review.get("approved", False)) and score >= 75
