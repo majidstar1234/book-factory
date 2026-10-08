@@ -6,9 +6,10 @@
     {
       "id": 1,
       "title": "مقدمه‌ای بر پردازش توزیع‌شده",
-      "status": "written",
+      "status": "approved",
       "attempts": 1,
-      "review": "pending"
+      "review": "approved",
+      "review_score": 86
     },
     {
       "id": 2,
