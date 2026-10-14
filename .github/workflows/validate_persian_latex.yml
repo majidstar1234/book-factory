@@ -6,6 +6,8 @@ on:
       - "golden_examples/**"
       - "skills/persian-latex/**"
       - "tests/test_persian_latex_golden.py"
+      - "tests/test_markdown_to_tex.py"
+      - "scripts/build_book.py"
       - ".github/workflows/validate_persian_latex.yml"
   push:
     branches:
@@ -30,4 +32,4 @@ jobs:
         with:
           python-version: "3.12"
       - name: Run golden reference regression tests
-        run: python -m unittest discover -s tests -p 'test_persian_latex_golden.py' -v
+        run: python -m unittest discover -s tests -v
