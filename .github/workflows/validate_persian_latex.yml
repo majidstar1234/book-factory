@@ -16,6 +16,8 @@ on:
       - "golden_examples/**"
       - "skills/persian-latex/**"
       - "tests/test_persian_latex_golden.py"
+      - "tests/test_markdown_to_tex.py"
+      - "scripts/build_book.py"
       - ".github/workflows/validate_persian_latex.yml"
 
 permissions:
