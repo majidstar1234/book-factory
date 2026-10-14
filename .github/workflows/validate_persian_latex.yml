@@ -1,0 +1,33 @@
+name: Validate Persian LaTeX Reference
+
+on:
+  pull_request:
+    paths:
+      - "golden_examples/**"
+      - "skills/persian-latex/**"
+      - "tests/test_persian_latex_golden.py"
+      - ".github/workflows/validate_persian_latex.yml"
+  push:
+    branches:
+      - "feat/persian-latex-golden-reference"
+    paths:
+      - "golden_examples/**"
+      - "skills/persian-latex/**"
+      - "tests/test_persian_latex_golden.py"
+      - ".github/workflows/validate_persian_latex.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run golden reference regression tests
+        run: python -m unittest discover -s tests -p 'test_persian_latex_golden.py' -v
