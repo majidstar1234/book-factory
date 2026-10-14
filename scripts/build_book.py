@@ -30,7 +30,7 @@ def inline(s: str) -> str:
     s = re.sub(r"(`)(.*?)(`)", lambda m: stash(type("M", (), {"group": lambda self, n: m.group(2)})()), s)
     s = tex_escape(s)
     # Keep Persian slash-decimals in logical left-to-right order under RTL text.
-    s = re.sub(r"(?<![\w])([۰-۹٠-٩0-9]+(?:/[۰-۹٠-٩0-9]+)+)(?![\w])", r"\lr{\1}", s)
+    s = re.sub(r"(?<![\w])([۰-۹٠-٩0-9]+(?:/[۰-۹٠-٩0-9]+)+)(?![\w])", lambda m: r"\lr{" + m.group(1) + "}", s)
     s = re.sub(r"\*\*(.+?)\*\*", r"\textbf{\1}", s)
     s = re.sub(r"\*(.+?)\*", r"\textit{\1}", s)
     for i, token in enumerate(tokens):
