@@ -25,7 +25,7 @@ class MarkdownToTexTests(unittest.TestCase):
         tex = markdown_to_tex(source)
         self.assertIn(r"\begin{tabular}", tex)
         self.assertIn(r"مفهوم & مقدار", tex)
-        self.assertIn(r"دهانه & ۶۶/۰۰", tex)
+        self.assertIn(r"دهانه & \\lr{۶۶/۰۰}", tex)
         self.assertIn("Horizontal Thrust", tex)
         self.assertIn(r"\end{tabular}", tex)
 
