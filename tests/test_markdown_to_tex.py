@@ -37,10 +37,8 @@ class MarkdownToTexTests(unittest.TestCase):
     def test_table_rows_with_wrong_cell_count_are_not_silently_broken(self) -> None:
         source = "| الف | ب |\n|---|---|\n| یک | دو | سه |"
         tex = markdown_to_tex(source)
-        self.assertIn("ستون", tex) if False else None
-        self.assertIn(r"\begin{tabular}", tex)
-        self.assertIn("یک", tex)
-        self.assertIn("سه", tex)
+        with self.assertRaisesRegex(ValueError, "expected 2"):
+            markdown_to_tex(source)
 
 
 if __name__ == "__main__":
