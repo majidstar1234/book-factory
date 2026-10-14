@@ -36,12 +36,27 @@ def inline(s: str) -> str:
     return s
 
 
+def _split_markdown_table_row(line: str) -> list[str]:
+    line = line.strip()
+    if line.startswith("|"):
+        line = line[1:]
+    if line.endswith("|"):
+        line = line[:-1]
+    return [cell.strip() for cell in line.split("|")]
+
+
+def _is_markdown_table_separator(line: str) -> bool:
+    cells = _split_markdown_table_row(line)
+    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.replace(" ", "")) for cell in cells)
+
+
 def markdown_to_tex(md: str) -> str:
     lines = md.splitlines()
     out: list[str] = []
     in_itemize = False
     in_enumerate = False
     paragraph: list[str] = []
+    skip_until = -1
 
     def flush_paragraph():
         nonlocal paragraph
@@ -59,8 +74,50 @@ def markdown_to_tex(md: str) -> str:
             out.append(r"\end{enumerate}")
             in_enumerate = False
 
-    for raw in lines:
+    for line_index, raw in enumerate(lines):
+        if line_index <= skip_until:
+            continue
         line = raw.strip()
+        if (
+            "|" in line
+            and line_index + 1 < len(lines)
+            and _is_markdown_table_separator(lines[line_index + 1].strip())
+        ):
+            flush_paragraph()
+            close_lists()
+            header = _split_markdown_table_row(line)
+            separator = _split_markdown_table_row(lines[line_index + 1].strip())
+            if len(header) != len(separator):
+                raise ValueError(f"Markdown table header/separator column mismatch at line {line_index + 1}")
+            rows: list[list[str]] = []
+            table_end = line_index + 1
+            row_index = line_index + 2
+            while row_index < len(lines) and lines[row_index].strip() and "|" in lines[row_index]:
+                row = _split_markdown_table_row(lines[row_index])
+                if len(row) != len(header):
+                    raise ValueError(
+                        f"Markdown table row {row_index + 1} has {len(row)} cells; expected {len(header)}"
+                    )
+                rows.append(row)
+                table_end = row_index
+                row_index += 1
+
+            column_spec = "|" + "r|" * len(header)
+            out.append(r"\begin{center}")
+            out.append(r"\begin{tabular}{" + column_spec + "}")
+            out.append(r"\hline")
+            out.append(" & ".join(inline(cell) for cell in header) + r" \\")
+            out.append(r"\hline")
+            for row in rows:
+                out.append(" & ".join(inline(cell) for cell in row) + r" \\")
+                out.append(r"\hline")
+            out.append(r"\end{tabular}")
+            out.append(r"\end{center}")
+            out.append("")
+            skip_until = table_end
+            if table_end == line_index + 1:
+                skip_until = line_index + 1
+            continue
         if not line:
             flush_paragraph()
             continue
