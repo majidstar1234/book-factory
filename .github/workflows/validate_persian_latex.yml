@@ -7,6 +7,7 @@ on:
       - "skills/persian-latex/**"
       - "tests/test_persian_latex_golden.py"
       - "tests/test_markdown_to_tex.py"
+      - "tests/test_xelatex_table_integration.py"
       - "scripts/build_book.py"
       - ".github/workflows/validate_persian_latex.yml"
   push:
@@ -17,6 +18,7 @@ on:
       - "skills/persian-latex/**"
       - "tests/test_persian_latex_golden.py"
       - "tests/test_markdown_to_tex.py"
+      - "tests/test_xelatex_table_integration.py"
       - "scripts/build_book.py"
       - ".github/workflows/validate_persian_latex.yml"
 
@@ -33,5 +35,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run golden reference regression tests
+      - name: Install XeLaTeX and Persian fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-xetex texlive-lang-arabic texlive-latex-extra fonts-noto-core
+      - name: Run regression and XeLaTeX integration tests
         run: python -m unittest discover -s tests -v
