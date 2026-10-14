@@ -40,4 +40,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y texlive-xetex texlive-lang-arabic texlive-latex-extra fonts-noto-core
       - name: Run regression and XeLaTeX integration tests
+        env:
+          PRESERVE_XELATEX_FIXTURE: "1"
         run: python -m unittest discover -s tests -v
+      - name: Upload compiled Persian table PDF for visual review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: persian-table-fixture-pdf
+          path: output/persian-table-fixture.pdf
+          if-no-files-found: error
+          retention-days: 7
