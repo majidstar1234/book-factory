@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -52,7 +53,12 @@ class XeLaTeXTableIntegrationTests(unittest.TestCase):
                 0,
                 msg=(result.stdout + "\n" + result.stderr)[-6000:],
             )
-            self.assertTrue((temp_dir / "fixture.pdf").is_file())
+            pdf_path = temp_dir / "fixture.pdf"
+            self.assertTrue(pdf_path.is_file())
+            if os.getenv("PRESERVE_XELATEX_FIXTURE") == "1":
+                artifact_path = ROOT / "output" / "persian-table-fixture.pdf"
+                artifact_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(pdf_path, artifact_path)
 
 
 if __name__ == "__main__":
