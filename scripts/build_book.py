@@ -24,13 +24,21 @@ def tex_escape(s: str) -> str:
 def inline(s: str) -> str:
     # Preserve simple Markdown emphasis/code while escaping normal LaTeX chars.
     tokens = []
+
     def stash(m):
         tokens.append(m.group(2))
         return f"@@TOKEN{len(tokens)-1}@@"
+
     s = re.sub(r"(`)(.*?)(`)", lambda m: stash(type("M", (), {"group": lambda self, n: m.group(2)})()), s)
     s = tex_escape(s)
-    # Keep Persian slash-decimals in logical left-to-right order under RTL text.
-    s = re.sub(r"(?<![\w])([۰-۹٠-٩0-9]+(?:/[۰-۹٠-٩0-9]+)+)(?![\w])", lambda m: r"\lr{" + m.group(1) + "}", s)
+    # Keep slash-decimals in LTR order while explicitly selecting the Persian font.
+    # Without the font switch, \lr{} selects the Latin font and Persian digits may
+    # become missing-glyph boxes in fonts such as Noto Sans.
+    s = re.sub(
+        r"(?<![\w])([۰-۹٠-٩0-9]+(?:/[۰-۹٠-٩0-9]+)+)(?![\w])",
+        lambda m: r"\lr{{\persianfont " + m.group(1) + "}}",
+        s,
+    )
     s = re.sub(r"\*\*(.+?)\*\*", r"\textbf{\1}", s)
     s = re.sub(r"\*(.+?)\*", r"\textit{\1}", s)
     for i, token in enumerate(tokens):
