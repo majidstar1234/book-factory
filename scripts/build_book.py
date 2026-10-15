@@ -65,6 +65,7 @@ def markdown_to_tex(md: str) -> str:
     out: list[str] = []
     in_itemize = False
     in_enumerate = False
+    in_fenced_code = False
     paragraph: list[str] = []
     skip_until = -1
 
@@ -88,6 +89,21 @@ def markdown_to_tex(md: str) -> str:
         if line_index <= skip_until:
             continue
         line = raw.strip()
+        # Preserve fenced code verbatim; code punctuation must not be TeX-escaped.
+        if line.startswith("```"):
+            if not in_fenced_code:
+                flush_paragraph()
+                close_lists()
+                out.append(r"\\begin{verbatim}")
+                in_fenced_code = True
+            else:
+                out.append(r"\\end{verbatim}")
+                out.append("")
+                in_fenced_code = False
+            continue
+        if in_fenced_code:
+            out.append(raw)
+            continue
         if (
             "|" in line
             and line_index + 1 < len(lines)
