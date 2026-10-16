@@ -39,8 +39,8 @@ def inline(s: str) -> str:
         lambda m: r"\lr{{\persianfont " + m.group(1) + "}}",
         s,
     )
-    s = re.sub(r"\*\*(.+?)\*\*", r"\textbf{\1}", s)
-    s = re.sub(r"\*(.+?)\*", r"\textit{\1}", s)
+    s = re.sub(r"\*\*(.+?)\*\*", lambda m: r"\textbf{" + m.group(1) + "}", s)
+    s = re.sub(r"\*(.+?)\*", lambda m: r"\textit{" + m.group(1) + "}", s)
     for i, token in enumerate(tokens):
         s = s.replace(f"@@TOKEN{i}@@", r"\texttt{" + tex_escape(token) + "}")
     return s
