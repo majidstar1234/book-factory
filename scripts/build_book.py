@@ -94,10 +94,10 @@ def markdown_to_tex(md: str) -> str:
             if not in_fenced_code:
                 flush_paragraph()
                 close_lists()
-                out.append(r"\\begin{verbatim}")
+                out.append(r"\begin{verbatim}")
                 in_fenced_code = True
             else:
-                out.append(r"\\end{verbatim}")
+                out.append(r"\end{verbatim}")
                 out.append("")
                 in_fenced_code = False
             continue
