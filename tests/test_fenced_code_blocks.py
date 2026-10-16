@@ -15,19 +15,19 @@ class FencedCodeBlockTests(unittest.TestCase):
             "```\n"
         )
         tex = markdown_to_tex(source)
-        self.assertIn(r"\begin{verbatim}", tex)
+        self.assertIn(r"\begin{verbatim}", tex.splitlines())
         self.assertIn("def clean_text(text):", tex)
         self.assertIn(r"r'\w+'", tex)
-        self.assertIn(r"\end{verbatim}", tex)
+        self.assertIn(r"\end{verbatim}", tex.splitlines())
         self.assertNotIn(r"\textbackslash{}", tex)
 
     def test_fenced_code_does_not_consume_following_heading(self) -> None:
         source = "```yaml\non: [push]\n```\n\n## بعد از کد\n"
         tex = markdown_to_tex(source)
         self.assertIn("on: [push]", tex)
-        self.assertIn(r"\section{بعد از کد}", tex)
-        self.assertEqual(tex.count(r"\begin{verbatim}"), 1)
-        self.assertEqual(tex.count(r"\end{verbatim}"), 1)
+        self.assertIn(r"\section{بعد از کد}", tex.splitlines())
+        self.assertEqual(tex.splitlines().count(r"\begin{verbatim}"), 1)
+        self.assertEqual(tex.splitlines().count(r"\end{verbatim}"), 1)
 
 
 if __name__ == "__main__":
