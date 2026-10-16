@@ -15,7 +15,7 @@ class MarkdownToTexTests(unittest.TestCase):
         self.assertIn(r"\item مورد یک", tex)
         self.assertIn(r"\end{itemize}", tex)
 
-    def test_markdown_table_converts_to_tabular(self) -> None:
+    def test_markdown_table_converts_to_page_width_tabularx(self) -> None:
         source = (
             "| مفهوم | مقدار |\n"
             "|---|---:|\n"
@@ -23,15 +23,15 @@ class MarkdownToTexTests(unittest.TestCase):
             "| انگلیسی | Horizontal Thrust |"
         )
         tex = markdown_to_tex(source)
-        self.assertIn(r"\begin{tabular}", tex)
+        self.assertIn(r"\begin{tabularx}{\textwidth}", tex)
         self.assertIn(r"مفهوم & مقدار", tex)
         self.assertIn(r"دهانه & \lr{{\persianfont ۶۶/۰۰}}", tex)
         self.assertIn("Horizontal Thrust", tex)
-        self.assertIn(r"\end{tabular}", tex)
+        self.assertIn(r"\end{tabularx}", tex)
 
     def test_pipe_paragraph_without_separator_stays_text(self) -> None:
         tex = markdown_to_tex("گزینه A | گزینه B")
-        self.assertNotIn(r"\begin{tabular}", tex)
+        self.assertNotIn(r"\begin{tabularx}", tex)
         self.assertIn(r"گزینه A | گزینه B", tex)
 
     def test_table_rows_with_wrong_cell_count_are_not_silently_broken(self) -> None:
