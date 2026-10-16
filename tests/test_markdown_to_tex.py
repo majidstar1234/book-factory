@@ -39,6 +39,20 @@ class MarkdownToTexTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "expected 2"):
             markdown_to_tex(source)
 
+    def test_english_parentheses_are_kept_left_to_right(self) -> None:
+        tex = markdown_to_tex("قانون مور (Moore's Law) یکی از مفاهیم پایه است.")
+        self.assertIn(r"\\lr{(Moore's Law)}", tex)
+
+    def test_persian_parentheses_are_not_wrapped_as_ltr(self) -> None:
+        tex = markdown_to_tex("این یک توضیح (مفهوم پایه) است.")
+        self.assertIn("(مفهوم پایه)", tex)
+        self.assertNotIn(r"\\lr{(مفهوم پایه)}", tex)
+
+    def test_mixed_persian_english_parentheses_are_left_unchanged_for_now(self) -> None:
+        tex = markdown_to_tex("انتخاب بین (CP یا AP) انجام می‌شود.")
+        self.assertIn("(CP یا AP)", tex)
+        self.assertNotIn(r"\\lr{(CP یا AP)}", tex)
+
 
 if __name__ == "__main__":
     unittest.main()
