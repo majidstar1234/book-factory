@@ -29,6 +29,16 @@ class MarkdownToTexTests(unittest.TestCase):
         self.assertIn("Horizontal Thrust", tex)
         self.assertIn(r"\end{tabularx}", tex)
 
+    def test_fenced_code_is_verbatim_and_wrapped_in_ltr(self) -> None:
+        source = "متن فارسی قبل از کد.\\n\\n\x60\x60\x60python\\nfor i in range(3):\\n    print(i + 1)\\n\x60\x60\x60\\n\\nمتن فارسی بعد از کد."
+        tex = markdown_to_tex(source)
+        self.assertIn(r"\\begin{LTR}", tex)
+        self.assertIn(r"\\begin{verbatim}", tex)
+        self.assertIn("    print(i + 1)", tex)
+        self.assertLess(tex.index(r"\\begin{LTR}"), tex.index(r"\\begin{verbatim}"))
+        self.assertLess(tex.index(r"\\end{verbatim}"), tex.index(r"\\end{LTR}"))
+        self.assertIn(r"\\end{LTR}", tex)
+
     def test_pipe_paragraph_without_separator_stays_text(self) -> None:
         tex = markdown_to_tex("گزینه A | گزینه B")
         self.assertNotIn(r"\begin{tabularx}", tex)
