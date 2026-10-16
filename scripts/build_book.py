@@ -39,6 +39,15 @@ def inline(s: str) -> str:
         lambda m: r"\lr{{\persianfont " + m.group(1) + "}}",
         s,
     )
+    # In Persian prose, an English-only parenthetical must be kept as one LTR unit.
+    # Leave Persian or mixed-script parentheses untouched for this narrowly scoped fix.
+    s = re.sub(
+        r"\(([^()\n]*[A-Za-z][^()\n]*)\)",
+        lambda m: r"\lr{(" + m.group(1) + ")}"
+        if not re.search(r"[\u0600-\u06FF]", m.group(1))
+        else m.group(0),
+        s,
+    )
     s = re.sub(r"\*\*(.+?)\*\*", lambda m: r"\textbf{" + m.group(1) + "}", s)
     s = re.sub(r"\*(.+?)\*", lambda m: r"\textit{" + m.group(1) + "}", s)
     for i, token in enumerate(tokens):
