@@ -137,16 +137,16 @@ def markdown_to_tex(md: str) -> str:
                 table_end = row_index
                 row_index += 1
 
-            column_spec = "|" + "r|" * len(header)
+            column_spec = "|" + "X|" * len(header)
             out.append(r"\begin{center}")
-            out.append(r"\begin{tabular}{" + column_spec + "}")
+            out.append(r"\begin{tabularx}{\textwidth}{" + column_spec + "}")
             out.append(r"\hline")
             out.append(" & ".join(inline(cell) for cell in header) + r" \\")
             out.append(r"\hline")
             for row in rows:
                 out.append(" & ".join(inline(cell) for cell in row) + r" \\")
                 out.append(r"\hline")
-            out.append(r"\end{tabular}")
+            out.append(r"\end{tabularx}")
             out.append(r"\end{center}")
             out.append("")
             skip_until = table_end
