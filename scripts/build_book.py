@@ -103,10 +103,14 @@ def markdown_to_tex(md: str) -> str:
             if not in_fenced_code:
                 flush_paragraph()
                 close_lists()
+                # Code is language-neutral/LTR even inside an RTL Persian document.
+                # Keep the verbatim environment nested inside bidi's LTR environment.
+                out.append(r"\begin{LTR}")
                 out.append(r"\begin{verbatim}")
                 in_fenced_code = True
             else:
                 out.append(r"\end{verbatim}")
+                out.append(r"\end{LTR}")
                 out.append("")
                 in_fenced_code = False
             continue
