@@ -9,6 +9,7 @@ on:
       - "tests/test_markdown_to_tex.py"
       - "tests/test_xelatex_table_integration.py"
       - "scripts/build_book.py"
+      - "templates/book.tex"
       - ".github/workflows/validate_persian_latex.yml"
   push:
     branches:
@@ -20,6 +21,7 @@ on:
       - "tests/test_markdown_to_tex.py"
       - "tests/test_xelatex_table_integration.py"
       - "scripts/build_book.py"
+      - "templates/book.tex"
       - ".github/workflows/validate_persian_latex.yml"
 
 permissions:
