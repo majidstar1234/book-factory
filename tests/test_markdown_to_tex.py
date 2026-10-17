@@ -73,21 +73,21 @@ class MarkdownToTexTests(unittest.TestCase):
 
     def test_persian_comments_and_strings_are_preserved_in_fenced_code(self) -> None:
         source = (
-            "متن فارسی قبل از کد.\\n\\n"
-            "```python\\n"
-            "# توضیح فارسی: محاسبهٔ دهانه\\n"
-            'message = "سلام دنیا"\\n'
-            "print(message)  # نمایش پیام\\n"
-            "```\\n\\n"
+            "متن فارسی قبل از کد.\n\n"
+            "```python\n"
+            "# توضیح فارسی: محاسبهٔ دهانه\n"
+            'message = "سلام دنیا"\n'
+            "print(message)  # نمایش پیام\n"
+            "```\n\n"
             "متن فارسی بعد از کد."
         )
         tex = markdown_to_tex(source)
-        self.assertIn(r"\\begin{LTR}", tex)
-        self.assertIn(r"\\begin{verbatim}", tex)
+        self.assertIn(r"\begin{LTR}", tex)
+        self.assertIn(r"\begin{verbatim}", tex)
         self.assertIn("# توضیح فارسی: محاسبهٔ دهانه", tex)
         self.assertIn('message = "سلام دنیا"', tex)
         self.assertIn("print(message)  # نمایش پیام", tex)
-        self.assertLess(tex.index(r"\\end{verbatim}"), tex.index(r"\\end{LTR}"))
+        self.assertLess(tex.index(r"\end{verbatim}"), tex.index(r"\end{LTR}"))
 
 
 if __name__ == "__main__":
