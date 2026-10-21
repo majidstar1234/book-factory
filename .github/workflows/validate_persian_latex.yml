@@ -53,11 +53,3 @@ jobs:
           path: output/persian-table-fixture.pdf
           if-no-files-found: error
           retention-days: 7
-      - name: Upload full real-book PDF
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: full-book-pdf
-          path: output/book.pdf
-          if-no-files-found: error
-          retention-days: 7
