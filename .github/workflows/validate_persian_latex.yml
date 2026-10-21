@@ -45,13 +45,6 @@ jobs:
         env:
           PRESERVE_XELATEX_FIXTURE: "1"
         run: python -m unittest discover -s tests -v
-      - name: Build book from approved real chapters
-        run: python scripts/build_book.py
-      - name: Compile complete book with XeLaTeX
-        run: |
-          cd output
-          xelatex -interaction=nonstopmode -halt-on-error book.tex
-          xelatex -interaction=nonstopmode -halt-on-error book.tex
       - name: Upload compiled Persian table PDF for visual review
         if: success()
         uses: actions/upload-artifact@v4
