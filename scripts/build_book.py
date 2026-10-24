@@ -24,16 +24,64 @@ def tex_escape(s: str) -> str:
 def inline(s: str) -> str:
     # Preserve simple Markdown emphasis/code while escaping normal LaTeX chars.
     tokens = []
+
     def stash(m):
         tokens.append(m.group(2))
         return f"@@TOKEN{len(tokens)-1}@@"
+
     s = re.sub(r"(`)(.*?)(`)", lambda m: stash(type("M", (), {"group": lambda self, n: m.group(2)})()), s)
     s = tex_escape(s)
-    s = re.sub(r"\*\*(.+?)\*\*", r"\textbf{\1}", s)
-    s = re.sub(r"\*(.+?)\*", r"\textit{\1}", s)
+    # Keep slash-decimals in LTR order while explicitly selecting the Persian font.
+    # Without the font switch, \lr{} selects the Latin font and Persian digits may
+    # become missing-glyph boxes in fonts such as Noto Sans.
+    s = re.sub(
+        r"(?<![\w])([۰-۹٠-٩0-9]+(?:/[۰-۹٠-٩0-9]+)+)(?![\w])",
+        lambda m: r"\lr{{\persianfont " + m.group(1) + "}}",
+        s,
+    )
+    # In Persian prose, an English-only parenthetical must be kept as one LTR unit.
+    # Leave Persian or mixed-script parentheses untouched for this narrowly scoped fix.
+    s = re.sub(
+        r"\(([^()\n]*[A-Za-z][^()\n]*)\)",
+        lambda m: r"\lr{(" + m.group(1) + ")}"
+        if not re.search(r"[\u0600-\u06FF]", m.group(1))
+        else m.group(0),
+        s,
+    )
+    s = re.sub(r"\*\*(.+?)\*\*", lambda m: r"\textbf{" + m.group(1) + "}", s)
+    s = re.sub(r"\*(.+?)\*", lambda m: r"\textit{" + m.group(1) + "}", s)
     for i, token in enumerate(tokens):
         s = s.replace(f"@@TOKEN{i}@@", r"\texttt{" + tex_escape(token) + "}")
     return s
+
+
+def table_cell_to_tex(cell: str) -> str:
+    """Render Latin-only table cells explicitly LTR."""
+    rendered = inline(cell)
+    has_latin = re.search(r"[A-Za-z]", cell) is not None
+    has_persian = re.search(r"[\u0600-\u06FF]", cell) is not None
+
+    if (
+        has_latin
+        and not has_persian
+        and r"\lr{" not in rendered
+    ):
+        return r"\lr{" + rendered + "}"
+
+    return rendered
+
+def _split_markdown_table_row(line: str) -> list[str]:
+    line = line.strip()
+    if line.startswith("|"):
+        line = line[1:]
+    if line.endswith("|"):
+        line = line[:-1]
+    return [cell.strip() for cell in line.split("|")]
+
+
+def _is_markdown_table_separator(line: str) -> bool:
+    cells = _split_markdown_table_row(line)
+    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.replace(" ", "")) for cell in cells)
 
 
 def markdown_to_tex(md: str) -> str:
@@ -41,7 +89,9 @@ def markdown_to_tex(md: str) -> str:
     out: list[str] = []
     in_itemize = False
     in_enumerate = False
+    in_fenced_code = False
     paragraph: list[str] = []
+    skip_until = -1
 
     def flush_paragraph():
         nonlocal paragraph
@@ -59,8 +109,69 @@ def markdown_to_tex(md: str) -> str:
             out.append(r"\end{enumerate}")
             in_enumerate = False
 
-    for raw in lines:
+    for line_index, raw in enumerate(lines):
+        if line_index <= skip_until:
+            continue
         line = raw.strip()
+        # Preserve fenced code verbatim; code punctuation must not be TeX-escaped.
+        if line.startswith("```"):
+            if not in_fenced_code:
+                flush_paragraph()
+                close_lists()
+                # Code is language-neutral/LTR even inside an RTL Persian document.
+                # Keep the verbatim environment nested inside bidi's LTR environment.
+                out.append(r"\begin{LTR}")
+                out.append(r"\begin{verbatim}")
+                in_fenced_code = True
+            else:
+                out.append(r"\end{verbatim}")
+                out.append(r"\end{LTR}")
+                out.append("")
+                in_fenced_code = False
+            continue
+        if in_fenced_code:
+            out.append(raw)
+            continue
+        if (
+            "|" in line
+            and line_index + 1 < len(lines)
+            and _is_markdown_table_separator(lines[line_index + 1].strip())
+        ):
+            flush_paragraph()
+            close_lists()
+            header = _split_markdown_table_row(line)
+            separator = _split_markdown_table_row(lines[line_index + 1].strip())
+            if len(header) != len(separator):
+                raise ValueError(f"Markdown table header/separator column mismatch at line {line_index + 1}")
+            rows: list[list[str]] = []
+            table_end = line_index + 1
+            row_index = line_index + 2
+            while row_index < len(lines) and lines[row_index].strip() and "|" in lines[row_index]:
+                row = _split_markdown_table_row(lines[row_index])
+                if len(row) != len(header):
+                    raise ValueError(
+                        f"Markdown table row {row_index + 1} has {len(row)} cells; expected {len(header)}"
+                    )
+                rows.append(row)
+                table_end = row_index
+                row_index += 1
+
+            column_spec = "|" + "X|" * len(header)
+            out.append(r"\begin{center}")
+            out.append(r"\begin{tabularx}{\textwidth}{" + column_spec + "}")
+            out.append(r"\hline")
+            out.append(" & ".join(table_cell_to_tex(cell) for cell in header) + r" \\")
+            out.append(r"\hline")
+            for row in rows:
+                out.append(" & ".join(table_cell_to_tex(cell) for cell in row) + r" \\")
+                out.append(r"\hline")
+            out.append(r"\end{tabularx}")
+            out.append(r"\end{center}")
+            out.append("")
+            skip_until = table_end
+            if table_end == line_index + 1:
+                skip_until = line_index + 1
+            continue
         if not line:
             flush_paragraph()
             continue

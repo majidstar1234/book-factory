@@ -2,7 +2,12 @@
 \usepackage{geometry}
 \usepackage{hyperref}
 \usepackage{enumitem}
+\usepackage{tabularx}
 \usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
 \usepackage{xepersian}
 \geometry{top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm}
 \settextfont[Path=../fonts/pack/NotoNaskhArabic/,BoldFont=NotoNaskhArabic-Bold.ttf]{NotoNaskhArabic-Regular.ttf}
@@ -11,6 +16,31 @@
 \hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}
 \setlength{\parskip}{0.7em}
 \setlength{\parindent}{0pt}
+
+% Running headers: titles only (no 2.1.1-style numeric prefixes).
+% Odd pages: page number on the left, chapter title on the right.
+% Even pages: subsection/section title on the left, page number on the right.
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\nouppercase{\rightmark}}
+\fancyhead[RE]{\thepage}
+\fancyhead[LO]{\thepage}
+\fancyhead[RO]{\nouppercase{\leftmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{15pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\renewcommand{\subsectionmark}[1]{\markright{#1}}
+% Chapter-opening pages use the same running-header style.
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyhead[LE]{\nouppercase{\rightmark}}%
+  \fancyhead[RE]{\thepage}%
+  \fancyhead[LO]{\thepage}%
+  \fancyhead[RO]{\nouppercase{\leftmark}}%
+  \renewcommand{\headrulewidth}{0.4pt}%
+}
 
 \title{%%BOOK_TITLE%%}
 \author{AI Book Factory}

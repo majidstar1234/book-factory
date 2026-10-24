@@ -1,0 +1,57 @@
+name: Validate Persian LaTeX Reference
+
+on:
+  pull_request:
+    paths:
+      - "golden_examples/**"
+      - "skills/persian-latex/**"
+      - "tests/test_persian_latex_golden.py"
+      - "tests/test_markdown_to_tex.py"
+      - "tests/test_xelatex_table_integration.py"
+      - "scripts/build_book.py"
+      - "templates/book.tex"
+      - ".github/workflows/validate_persian_latex.yml"
+  push:
+    branches:
+      - "feat/persian-latex-golden-reference"
+    paths:
+      - "golden_examples/**"
+      - "skills/persian-latex/**"
+      - "tests/test_persian_latex_golden.py"
+      - "tests/test_markdown_to_tex.py"
+      - "tests/test_xelatex_table_integration.py"
+      - "scripts/build_book.py"
+      - "templates/book.tex"
+      - ".github/workflows/validate_persian_latex.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install XeLaTeX and Persian fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-xetex texlive-lang-arabic texlive-latex-extra fonts-noto-core
+      - name: Run regression and XeLaTeX integration tests
+        env:
+          PRESERVE_XELATEX_FIXTURE: "1"
+        run: python -m unittest discover -s tests -v
+      - name: Upload compiled Persian table PDF for visual review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: persian-table-fixture-pdf
+          path: |
+            output/persian-table-fixture.pdf
+            output/veresk-curve-comparison-fixture.pdf
+          if-no-files-found: error
+          retention-days: 7
