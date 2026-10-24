@@ -55,6 +55,21 @@ def inline(s: str) -> str:
     return s
 
 
+def table_cell_to_tex(cell: str) -> str:
+    """Render Latin-only table cells explicitly LTR."""
+    rendered = inline(cell)
+    has_latin = re.search(r"[A-Za-z]", cell) is not None
+    has_persian = re.search(r"[\u0600-\u06FF]", cell) is not None
+
+    if (
+        has_latin
+        and not has_persian
+        and r"\lr{" not in rendered
+    ):
+        return r"\lr{" + rendered + "}"
+
+    return rendered
+
 def _split_markdown_table_row(line: str) -> list[str]:
     line = line.strip()
     if line.startswith("|"):
@@ -145,10 +160,10 @@ def markdown_to_tex(md: str) -> str:
             out.append(r"\begin{center}")
             out.append(r"\begin{tabularx}{\textwidth}{" + column_spec + "}")
             out.append(r"\hline")
-            out.append(" & ".join(inline(cell) for cell in header) + r" \\")
+            out.append(" & ".join(table_cell_to_tex(cell) for cell in header) + r" \\")
             out.append(r"\hline")
             for row in rows:
-                out.append(" & ".join(inline(cell) for cell in row) + r" \\")
+                out.append(" & ".join(table_cell_to_tex(cell) for cell in row) + r" \\")
                 out.append(r"\hline")
             out.append(r"\end{tabularx}")
             out.append(r"\end{center}")

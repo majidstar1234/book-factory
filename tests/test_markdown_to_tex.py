@@ -90,5 +90,10 @@ class MarkdownToTexTests(unittest.TestCase):
         self.assertLess(tex.index(r"\end{verbatim}"), tex.index(r"\end{LTR}"))
 
 
+    def test_english_only_table_cell_is_wrapped_left_to_right(self) -> None:
+        source = "| Category | Value |\n|---|---|\n| force | Horizontal Thrust |"
+        tex = markdown_to_tex(source)
+        self.assertIn(r"\lr{Horizontal Thrust}", tex)
+
 if __name__ == "__main__":
     unittest.main()
