@@ -1,0 +1,46 @@
+name: Gemini Research Bridge
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Gemini model ID (leave blank to use repository variable GEMINI_MODEL or default)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  run-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GEMINI_MODEL: ${{ inputs.model || vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v7
+        with:
+          ref: research/active-systems-lab
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install Gemini SDK
+        run: python -m pip install --disable-pip-version-check google-genai
+
+      - name: Call Gemini research API
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python research/active-systems-lab/scripts/run_gemini_research.py
+
+      - name: Upload raw Gemini response
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-vanderpol-research
+          path: research/active-systems-lab/results/*.json
+          if-no-files-found: error
+          retention-days: 14
